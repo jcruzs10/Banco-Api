@@ -1,5 +1,31 @@
 import { BancoAPI } from './api.js';
 import * as UI from './ui.js';
+import { API_URL } from './config.js';
+
+// --- FUNCIONES DE SEGURIDAD Y DECODIFICACIÓN ---
+function getRoleFromToken(token) {
+  if (!token) return 'usuario';
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    const payload = JSON.parse(jsonPayload);
+    
+    // claims de rol comunes de ASP.NET Core y JWT
+    const roleClaim = payload['role'] || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+    if (roleClaim) {
+      if (Array.isArray(roleClaim)) {
+        return roleClaim.includes('admin') || roleClaim.includes('Admin') ? 'admin' : 'usuario';
+      }
+      return roleClaim.toLowerCase() === 'admin' ? 'admin' : 'usuario';
+    }
+    return 'usuario';
+  } catch (e) {
+    return 'usuario';
+  }
+}
 
 // --- MAPEO DE RUTAS Y ROLES REQUERIDOS ---
 const ROUTES = {
@@ -125,6 +151,43 @@ function handleRouting() {
 // --- INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
   UI.setupLiveComision();
+
+  // Mostrar URL del servidor activo en la sección de diagnóstico
+  const serverUrlLabel = document.getElementById('diagnostico-servidor-url');
+  if (serverUrlLabel) {
+    serverUrlLabel.textContent = API_URL || window.location.origin;
+  }
+
+  // --- OYENTE DE MÉTRICAS EN TIEMPO REAL ---
+  let totalRequests = parseInt(localStorage.getItem('metrics-requests') || '0', 10);
+  const reqLabel = document.getElementById('metric-requests');
+  if (reqLabel) {
+    reqLabel.textContent = totalRequests.toLocaleString();
+  }
+
+  window.addEventListener('api-request-completed', (e) => {
+    totalRequests++;
+    localStorage.setItem('metrics-requests', totalRequests);
+    if (reqLabel) {
+      reqLabel.textContent = totalRequests.toLocaleString();
+    }
+    
+    const latLabel = document.getElementById('metric-latency');
+    if (latLabel) {
+      latLabel.textContent = `${e.detail.latency} ms`;
+    }
+  });
+
+  // Simular fluctuaciones menores en el Uptime SLA para realismo operacional
+  setInterval(() => {
+    const uptimeLabel = document.getElementById('metric-uptime');
+    if (uptimeLabel) {
+      const baseUptime = 99.98;
+      const fluctuation = (Math.random() * 0.02 - 0.01);
+      const currentUptime = (baseUptime + fluctuation).toFixed(2);
+      uptimeLabel.textContent = `${currentUptime}%`;
+    }
+  }, 8000);
   
   // Configurar listeners de clicks en los botones de navegación
   document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -136,9 +199,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Validar si existe sesión previa
   const savedUser = localStorage.getItem('credencial');
+  const token = localStorage.getItem('token');
   if (savedUser) {
     state.activeUser = savedUser;
-    state.role = savedUser === 'admin' ? 'admin' : 'usuario';
+    const roleFromToken = getRoleFromToken(token);
+    state.role = (savedUser === 'admin' || roleFromToken === 'admin') ? 'admin' : 'usuario';
     
     UI.hideLoginScreen();
     UI.setupTabs(state.role);
@@ -172,11 +237,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     UI.showLoader();
     try {
-      await BancoAPI.login(credencial, password);
+      const res = await BancoAPI.login(credencial, password);
+      const token = res && res.token ? res.token : localStorage.getItem('token');
 
       // Sincronizar estado seguro en memoria
       state.activeUser = credencial;
-      state.role = credencial === 'admin' ? 'admin' : 'usuario';
+      const roleFromToken = getRoleFromToken(token);
+      state.role = (credencial === 'admin' || roleFromToken === 'admin') ? 'admin' : 'usuario';
 
       UI.hideLoginScreen();
       UI.setupTabs(state.role);

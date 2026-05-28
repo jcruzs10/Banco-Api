@@ -47,16 +47,7 @@
 
                 <button type="submit" class="w-full bg-blue-900 text-white p-3.5 rounded-lg font-bold hover:bg-blue-800 transition-all shadow-lg hover:shadow-blue-900/20 active:translate-y-0">
                     Ingresar al Sistema
-                </button>
             </form>
-
-            <div class="mt-6 pt-6 border-t border-slate-100 text-center">
-                <p class="text-xs text-slate-400">Credenciales de Demostración:</p>
-                <div class="mt-2 flex justify-center gap-4 text-xs font-mono text-slate-600">
-                    <div><span class="font-bold text-blue-800">Admin:</span> admin / admin123</div>
-                    <div><span class="font-bold text-emerald-800">User:</span> user1 / user123</div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -687,20 +678,20 @@
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                                 <div class="bg-slate-50 p-3 rounded-lg text-center">
                                     <span class="block text-[10px] font-bold text-slate-400 uppercase">Latencia</span>
-                                    <span class="text-lg font-bold text-slate-700 font-mono">14 ms</span>
+                                    <span id="metric-latency" class="text-lg font-bold text-slate-700 font-mono">-- ms</span>
                                 </div>
                                 <div class="bg-slate-50 p-3 rounded-lg text-center">
                                     <span class="block text-[10px] font-bold text-slate-400 uppercase">Uptime SLA</span>
-                                    <span class="text-lg font-bold text-slate-700 font-mono">99.98%</span>
+                                    <span id="metric-uptime" class="text-lg font-bold text-slate-700 font-mono">99.98%</span>
                                 </div>
                                 <div class="bg-slate-50 p-3 rounded-lg text-center">
                                     <span class="block text-[10px] font-bold text-slate-400 uppercase">Peticiones</span>
-                                    <span class="text-lg font-bold text-slate-700 font-mono">1,489</span>
+                                    <span id="metric-requests" class="text-lg font-bold text-slate-700 font-mono">0</span>
                                 </div>
                             </div>
                         </div>
                         <p class="text-xs text-slate-500 mt-4 italic border-t pt-3">
-                            Servidor activo: <span class="font-mono text-[11px] text-blue-900 font-bold bg-blue-50 px-2 py-0.5 rounded">https://bancocentroamericano.azurewebsites.net</span>
+                            Servidor activo: <span id="diagnostico-servidor-url" class="font-mono text-[11px] text-blue-900 font-bold bg-blue-50 px-2 py-0.5 rounded">Consultando...</span>
                         </p>
                     </div>
                 </div>

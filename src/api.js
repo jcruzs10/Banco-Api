@@ -22,8 +22,11 @@ async function request(path, options = {}) {
     headers
   };
 
+  const startTime = performance.now();
   try {
     const response = await fetch(url, config);
+    const latency = Math.round(performance.now() - startTime);
+    window.dispatchEvent(new CustomEvent('api-request-completed', { detail: { latency } }));
     
     // Si la respuesta no es OK, intentamos parsear el error que devuelve la API
     if (!response.ok) {
@@ -48,6 +51,8 @@ async function request(path, options = {}) {
     
     return await response.text();
   } catch (error) {
+    const latency = Math.round(performance.now() - startTime);
+    window.dispatchEvent(new CustomEvent('api-request-completed', { detail: { latency } }));
     console.error(`Error en API ${path}:`, error);
     throw error;
   }

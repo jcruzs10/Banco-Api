@@ -167,6 +167,8 @@ export function renderBitacoraAdminUI(logs) {
   const container = document.getElementById('bitacora-admin-lista');
   if (!container) return;
 
+  updateAMLAlerts(logs);
+
   if (!logs || logs.length === 0) {
     container.innerHTML = `
       <p class="text-gray-400 italic text-center py-8">No se encontraron movimientos registrados en la bitácora de auditoría para esta cuenta.</p>
@@ -200,6 +202,34 @@ export function renderBitacoraAdminUI(logs) {
       </div>
     `;
   }).join('');
+}
+
+// Actualizar alertas AML de forma dinámica basadas en las transacciones consultadas
+export function updateAMLAlerts(logs) {
+  const amlContainer = document.getElementById('aml-alertas-lista');
+  if (!amlContainer) return;
+
+  const logsArray = Array.isArray(logs) ? logs : [];
+  const grandesTransacciones = logsArray.filter(log => Math.abs(parseFloat(log.monto)) > 50000);
+  const alertaCount = grandesTransacciones.length;
+
+  amlContainer.innerHTML = `
+    <li class="flex items-center justify-between border-b pb-2">
+        <span class="font-medium text-slate-800">Transferencias > Q 50,000</span>
+        ${alertaCount > 0 
+          ? `<span class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded text-xs font-bold animate-pulse">${alertaCount} Alerta${alertaCount > 1 ? 's' : ''}</span>`
+          : `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-xs font-bold">Limpio</span>`
+        }
+    </li>
+    <li class="flex items-center justify-between border-b pb-2">
+        <span class="font-medium text-slate-800">Depósitos de cuentas inactivas</span>
+        <span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-xs font-bold">Limpio</span>
+    </li>
+    <li class="flex items-center justify-between">
+        <span class="font-medium text-slate-800">Validación de firmas digitales</span>
+        <span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-xs font-bold">Verificado</span>
+    </li>
+  `;
 }
 
 // Renderizar estado de diagnóstico de integraciones

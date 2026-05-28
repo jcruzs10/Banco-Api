@@ -6,6 +6,36 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Cargar variables de entorno desde .env de forma manual si existe el archivo
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  envContent.split(/\r?\n/).forEach(line => {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#')) {
+      const parts = trimmed.split('=');
+      const key = parts[0].trim();
+      let val = parts.slice(1).join('=').trim();
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1);
+      }
+      if (key && val) {
+        process.env[key] = val;
+      }
+    }
+  });
+}
+
+// Obtener la URL de la API y calcular su origen para la Content-Security-Policy
+const API_URL = process.env.VITE_API_URL || 'https://bancocentroamericano.azurewebsites.net';
+let apiOrigin = API_URL;
+try {
+  const urlObj = new URL(API_URL);
+  apiOrigin = urlObj.origin;
+} catch (e) {
+  console.warn('[Azure Deploy Server] URL de API inválida en la configuración, usando fallback origin');
+}
+
 // Azure asigna dinámicamente el puerto mediante la variable de entorno PORT
 const PORT = process.env.PORT || 8080;
 const DIST_DIR = path.join(__dirname, 'dist');
@@ -55,7 +85,7 @@ const server = http.createServer((req, res) => {
       'X-Content-Type-Options': 'nosniff',
       'X-Frame-Options': 'DENY',
       'Referrer-Policy': 'no-referrer-when-downgrade',
-      'Content-Security-Policy': "default-src 'self' https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com https://bancocentroamericano.azurewebsites.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; img-src 'self' data:;"
+      'Content-Security-Policy': `default-src 'self' https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com ${apiOrigin}; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; img-src 'self' data:;`
     });
 
     fs.createReadStream(filePath).pipe(res);
